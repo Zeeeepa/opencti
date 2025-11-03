@@ -33880,10 +33880,10 @@ export type WorkEdge = {
 export type WorkEditMutations = {
   __typename?: 'WorkEditMutations';
   addDraftContext: Scalars['ID']['output'];
-  addExpectations: Scalars['ID']['output'];
+  addExpectations?: Maybe<Scalars['ID']['output']>;
   delete: Scalars['ID']['output'];
   ping: Scalars['ID']['output'];
-  reportExpectation: Scalars['ID']['output'];
+  reportExpectation?: Maybe<Scalars['ID']['output']>;
   toProcessed: Scalars['ID']['output'];
   toReceived: Scalars['ID']['output'];
 };
@@ -47002,10 +47002,10 @@ export type WorkEdgeResolvers<ContextType = any, ParentType extends ResolversPar
 
 export type WorkEditMutationsResolvers<ContextType = any, ParentType extends ResolversParentTypes['WorkEditMutations'] = ResolversParentTypes['WorkEditMutations']> = ResolversObject<{
   addDraftContext?: Resolver<ResolversTypes['ID'], ParentType, ContextType, Partial<WorkEditMutationsAddDraftContextArgs>>;
-  addExpectations?: Resolver<ResolversTypes['ID'], ParentType, ContextType, Partial<WorkEditMutationsAddExpectationsArgs>>;
+  addExpectations?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, Partial<WorkEditMutationsAddExpectationsArgs>>;
   delete?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   ping?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  reportExpectation?: Resolver<ResolversTypes['ID'], ParentType, ContextType, Partial<WorkEditMutationsReportExpectationArgs>>;
+  reportExpectation?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, Partial<WorkEditMutationsReportExpectationArgs>>;
   toProcessed?: Resolver<ResolversTypes['ID'], ParentType, ContextType, Partial<WorkEditMutationsToProcessedArgs>>;
   toReceived?: Resolver<ResolversTypes['ID'], ParentType, ContextType, Partial<WorkEditMutationsToReceivedArgs>>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
