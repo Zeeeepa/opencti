@@ -83,7 +83,7 @@ export function GradientBorderTextField({
       sx={{
         '& .MuiOutlinedInput-root': {
           position: 'relative',
-          borderRadius: 2,
+          borderRadius: 1,
           backgroundColor: theme.palette.background.paper,
 
           '& fieldset': {

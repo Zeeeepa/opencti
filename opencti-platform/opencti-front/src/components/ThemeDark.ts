@@ -392,6 +392,13 @@ const ThemeDark = (
         },
       },
     },
+    // MuiSvgIcon: {
+    //   styleOverrides: {
+    //     fontSizeSmall: {
+    //       fontSize: '16px !important',
+    //     },
+    //   },
+    // },
   },
 });
 
