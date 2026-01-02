@@ -25,6 +25,7 @@ jobs:
 
   verify-linked-issue:
     name: Verify Linked Issue
+    if: !contains(github.event.issue.labels.*.name, 'dependencies')
     runs-on: ubuntu-latest
     permissions:
       contents: read
