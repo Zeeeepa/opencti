@@ -465,7 +465,9 @@ export const streamConsumeQueue = async (queueName, connectionSetterCallback, ca
               });
               channel.prefetch(1);
               channel.consume(queueName, (data) => {
-                const ackCallback = () => { channel.ack(data); };
+                const ackCallback = () => {
+                  channel.ack(data);
+                };
                 if (data !== null) {
                   callback(data.content.toString(), ackCallback);
                 } else {
@@ -475,7 +477,7 @@ export const streamConsumeQueue = async (queueName, connectionSetterCallback, ca
                 if (consumeError) {
                   logApp.error('[QUEUEING] Consumption fail', {
                     queueName,
-                    cause: consumeError
+                    cause: consumeError,
                   });
                 }
               });
