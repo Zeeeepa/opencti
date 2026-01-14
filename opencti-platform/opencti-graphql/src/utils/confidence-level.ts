@@ -178,7 +178,7 @@ export const controlUserConfidenceAgainstElement = <T extends ObjectWithConfiden
   return true; // ok
 };
 
-type UpdateInput = {
+export type UpdateInput = {
   key: string | string[];
   value: string[];
 };
