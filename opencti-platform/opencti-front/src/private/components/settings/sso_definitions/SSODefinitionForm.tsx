@@ -16,6 +16,7 @@ import { SSODefinitionEditionFragment$data } from '@components/settings/sso_defi
 import TextField from '../../../../components/TextField';
 import { getAdvancedConfigFromData } from '@components/settings/sso_definitions/utils/getConfigAndAdvancedConfigFromData';
 import SAMLConfig from '@components/settings/sso_definitions/SAMLConfig';
+import LDAPConfig from '@components/settings/sso_definitions/LDAPConfig';
 import { ConfigurationTypeInput } from '@components/settings/sso_definitions/__generated__/SSODefinitionCreationMutation.graphql';
 
 interface SSODefinitionFormProps {
@@ -68,6 +69,7 @@ const SSODefinitionForm = ({
   selectedStrategy,
   onSubmitField,
 }: SSODefinitionFormProps) => {
+  console.log('selectedStrategy ; ', selectedStrategy);
   const { t_i18n } = useFormatter();
   const theme = useTheme<Theme>();
   const [currentTab, setCurrentTab] = useState(0);
@@ -225,10 +227,11 @@ const SSODefinitionForm = ({
                 name="enabled"
                 type="checkbox"
                 onChange={updateField}
-                label={t_i18n('Enable SAML authentication')}
+                label={t_i18n(`Enable ${selectedStrategy} authentication`)}
                 containerstyle={{ marginLeft: 2, marginTop: 20 }}
               />
               {selectedStrategy === 'SAML' && <SAMLConfig updateField={updateField} />}
+              {selectedStrategy === 'LDAP' && <LDAPConfig updateField={updateField} />}
             </>
           )}
           {currentTab === 1 && (

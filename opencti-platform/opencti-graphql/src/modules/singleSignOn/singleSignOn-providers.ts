@@ -209,6 +209,12 @@ export const registerSAMLStrategy = async (ssoEntity: BasicStoreEntitySingleSign
   logAuthInfo('Passport SAML configured', EnvStrategyType.STRATEGY_SAML, { id: ssoEntity.id, identifier: ssoEntity.identifier, providerRef });
 };
 
+export const registerLDAPStrategy = async (ssoEntity: BasicStoreEntitySingleSignOn) => {
+  const providerRef = ssoEntity.identifier || 'ldapauth';
+  logAuthInfo('Configuring LDAP', EnvStrategyType.STRATEGY_LDAP, { id: ssoEntity.id, identifier: ssoEntity.identifier, providerRef });
+
+}
+
 export const registerAdminLocalStrategy = async () => {
   logAuthInfo('Configuring internal local', EnvStrategyType.STRATEGY_LOCAL);
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
