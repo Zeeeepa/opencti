@@ -23,7 +23,7 @@ const LDAPConfig = ({ updateField }: LDAPConfigProps) => {
         component={TextField}
         variant='standard'
         name='searchFilter'
-        label={t_i18n('Private key')}
+        label={t_i18n('Search filter')}
         onSubmit={updateField}
         fullWidth
         style={{ marginTop: 20 }}
@@ -32,7 +32,7 @@ const LDAPConfig = ({ updateField }: LDAPConfigProps) => {
         component={TextField}
         variant='standard'
         name='searchAttributes'
-        label={t_i18n('Private key')}
+        label={t_i18n('Search attributes')}
         onSubmit={updateField}
         fullWidth
         style={{ marginTop: 20 }}
@@ -41,7 +41,7 @@ const LDAPConfig = ({ updateField }: LDAPConfigProps) => {
         component={TextField}
         variant='standard'
         name='searchBase' // search base dns
-        label={t_i18n('Private key')}
+        label={t_i18n('Search base')}
         onSubmit={updateField}
         fullWidth
         style={{ marginTop: 20 }}
@@ -50,7 +50,7 @@ const LDAPConfig = ({ updateField }: LDAPConfigProps) => {
         component={TextField}
         variant='standard'
         name='bindDN'
-        label={t_i18n('Private key')}
+        label={t_i18n('Bind dn')}
         onSubmit={updateField}
         fullWidth
         style={{ marginTop: 20 }}
@@ -59,7 +59,7 @@ const LDAPConfig = ({ updateField }: LDAPConfigProps) => {
         component={TextField}
         variant='standard'
         name='bindCredentials'
-        label={t_i18n('Private key')}
+        label={t_i18n('Bind credentials')}
         onSubmit={updateField}
         fullWidth
         style={{ marginTop: 20 }}
@@ -67,8 +67,8 @@ const LDAPConfig = ({ updateField }: LDAPConfigProps) => {
       <Field
         component={TextField}
         variant='standard'
-        name='port'
-        label={t_i18n('Private key')}
+        name='portNumber'
+        label={t_i18n('Port number')}
         onSubmit={updateField}
         fullWidth
         style={{ marginTop: 20 }}
