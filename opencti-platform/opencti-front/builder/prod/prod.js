@@ -1,5 +1,5 @@
 import esbuild from 'esbuild';
-import { cp, rename, rm, readdir, writeFile } from 'node:fs/promises'
+import { cp, rename, rm, readdir, writeFile } from 'node:fs/promises';
 import { RelayPlugin } from '../plugin/esbuild-relay.js';
 
 // Define args options
