@@ -32,7 +32,7 @@ const SSODefinitionCreation: FunctionComponent<SSODefinitionCreationProps> = ({
   const { t_i18n } = useFormatter();
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
 
-  const { formikToSamlConfig } = useFormikToSSOConfig();
+  const formikToSSOConfig = useFormikToSSOConfig(selectedStrategy ?? '');
 
   const CreateSSODefinitionControlledDial = (props: DrawerControlledDialProps) => (
     <CreateSplitControlledDial
@@ -46,20 +46,32 @@ const SSODefinitionCreation: FunctionComponent<SSODefinitionCreationProps> = ({
         'Create LocalAuth',
       ]}
       onOptionClick={(option) => {
-        if (option === 'Create SAML') {
-          setSelectedStrategy('SAML');
-        } else if (option === 'Create OpenID') {
-          setSelectedStrategy('OpenID');
-        } else if (option === 'Create Header') {
-          setSelectedStrategy('Header');
-        } else if (option === 'Create ClientCert') {
-          setSelectedStrategy('ClientCert');
-        } else if (option === 'Create Ldap') {
-          setSelectedStrategy('Ldap');
-        } else if (option === 'Create LocalAuth') {
-          setSelectedStrategy('LocalAuth');
-        } else {
-          setSelectedStrategy(null);
+        switch (option) {
+          case 'Create SAML': {
+            setSelectedStrategy('SAML');
+            break;
+          }
+          case 'Create OpenID': {
+            setSelectedStrategy('OpenID');
+            break;
+          }
+          case 'Create Header': {
+            setSelectedStrategy('Header');
+            break;
+          }
+          case 'Create ClientCert': {
+            setSelectedStrategy('ClientCert');
+            break;
+          }
+          case 'Create Ldap': {
+            setSelectedStrategy('Ldap');
+            break;
+          }
+          case 'Create LocalAuth': {
+            setSelectedStrategy('LocalAuth');
+            break;
+          }
+          default: setSelectedStrategy(null);
         }
       }}
       {...props}
@@ -70,7 +82,8 @@ const SSODefinitionCreation: FunctionComponent<SSODefinitionCreationProps> = ({
     values: SSODefinitionFormValues,
     { setSubmitting, resetForm }: { setSubmitting: (flag: boolean) => void; resetForm: () => void },
   ) => {
-    const configuration = formikToSamlConfig(values);
+    if (!formikToSSOConfig) return;
+    const configuration = formikToSSOConfig(values);
 
     values.advancedConfigurations.forEach((conf) => {
       if (conf.key && conf.value && conf.type) {
@@ -85,16 +98,20 @@ const SSODefinitionCreation: FunctionComponent<SSODefinitionCreationProps> = ({
     const strategyEnum = getStrategyConfigEnum(selectedStrategy);
 
     const groups_management = {
+      groups_path: values.groups_path || null,
       group_attributes: values.group_attributes || null,
+      groups_attributes: values.groups_attributes || null,
       groups_mapping: values.groups_mapping.filter((v) => v && v.trim() !== ''),
       read_userinfo: values.read_userinfo,
     };
+
     const organizations_management = {
       organizations_path: values.organizations_path || null,
       organizations_mapping: values.organizations_mapping.filter(
         (v) => v && v.trim() !== '',
       ),
     };
+
     const finalValues = {
       name: values.name,
       identifier: values.identifier,

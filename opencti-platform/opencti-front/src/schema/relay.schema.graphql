@@ -15324,6 +15324,7 @@ type OrganizationsManagement {
 }
 
 type GroupsManagement {
+  groups_attributes: [String!]
   group_attributes: [String!]
   group_attribute: String
   groups_path: [String!]
@@ -15375,6 +15376,7 @@ input OrganizationsManagementInput {
 }
 
 input GroupsManagementInput {
+  groups_attributes: [String!]
   group_attributes: [String!]
   group_attribute: String
   groups_path: [String!]
