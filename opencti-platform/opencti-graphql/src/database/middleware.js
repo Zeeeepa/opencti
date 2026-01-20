@@ -13,6 +13,7 @@ import {
   DatabaseError,
   ForbiddenAccess,
   FunctionalError,
+  INSUFFICIENT_CONFIDENCE_LEVEL,
   LockTimeoutError,
   MissingReferenceError,
   TYPE_LOCK_ERROR,
@@ -3336,8 +3337,21 @@ const createEntityRaw = async (context, user, rawInput, type, opts = {}) => {
         const target = R.find((e) => e.standard_id === standardId, filteredEntities) || R.head(filteredEntities);
         const sources = R.filter((e) => e.internal_id !== target.internal_id, filteredEntities);
         hashMergeValidation([target, ...sources]);
-        await mergeEntities(context, user, target.internal_id, sources.map((s) => s.internal_id), { locks: participantIds });
-        return upsertElement(context, user, target, type, resolvedInput, { ...opts, locks: participantIds });
+        try {
+          await mergeEntities(context, user, target.internal_id, sources.map((s) => s.internal_id), { locks: participantIds });
+          return upsertElement(context, user, target, type, resolvedInput, { ...opts, locks: participantIds });
+        } catch (e) {
+          // In case of insufficient confidence level, don't reject continue to upsert
+          // as upsert have a complex strategy about confidence that doesn't reject everything
+          if (e.extensions.data.doc_code === INSUFFICIENT_CONFIDENCE_LEVEL) {
+            logApp.warn('Merging stopped because of user confidence level', { cause: e });
+            // Try to execute the method forcing update to false, prevent auto merging.
+            return createEntityRaw(context, user, { ...rawInput, update: false }, type, opts);
+          }
+          // For other errors, propagate the error.
+          // noinspection ExceptionCaughtLocallyJS
+          throw e;
+        }
       }
       if (resolvedInput.stix_id && !existingEntities.map((n) => getInstanceIds(n)).flat().includes(resolvedInput.stix_id)) {
         // Upsert others
