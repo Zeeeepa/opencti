@@ -3343,7 +3343,7 @@ const createEntityRaw = async (context, user, rawInput, type, opts = {}) => {
         } catch (e) {
           // In case of insufficient confidence level, don't reject continue to upsert
           // as upsert have a complex strategy about confidence that doesn't reject everything
-          if (e.extensions.data.doc_code === INSUFFICIENT_CONFIDENCE_LEVEL) {
+          if (e?.extensions?.data?.doc_code === INSUFFICIENT_CONFIDENCE_LEVEL) {
             logApp.warn('Merging stopped because of user confidence level', { cause: e });
             // Try to execute the method forcing update to false, prevent auto merging.
             return createEntityRaw(context, user, { ...rawInput, update: false }, type, opts);
