@@ -3,7 +3,7 @@ import type { AuthContext, AuthUser } from '../../types/user';
 import type { StoreObject, StoreRelation } from '../../types/store';
 import type { ActivityStreamEvent, BaseEvent, Change, CreateEventOpts, EventOpts, SseEvent, StreamDataEvent, StreamNotifEvent, UpdateEventOpts } from '../../types/event';
 import { isStixExportableInStreamData } from '../../schema/stixCoreObject';
-import { generateCreateMessage, generateDeleteMessage, generateRestoreMessage } from '../generate-message';
+import { generateCreateMessage, generateDeleteMessage, generateRestoreMessage } from '../data-changes';
 import {
   buildCreateEvent,
   buildDeleteEvent,

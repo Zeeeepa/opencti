@@ -160,7 +160,6 @@ import {
   CONTAINER_SHARING_USER,
   controlUserRestrictDeleteAgainstElement,
   executionContext,
-  INTERNAL_USERS,
   isBypassUser,
   isMarkingAllowed,
   isOrganizationAllowed,
@@ -202,17 +201,8 @@ import { validateInputCreation, validateInputUpdate } from '../schema/schema-val
 import { telemetry } from '../config/tracing';
 import { cleanMarkings, handleMarkingOperations } from '../utils/markingDefinition-utils';
 import { buildUpdatePatchForUpsert, generateInputsForUpsert } from '../utils/upsert-utils';
-import { generateCreateMessage, generateRestoreMessage } from './generate-message';
-import {
-  authorizedMembers,
-  authorizedMembersActivationDate,
-  confidence,
-  iAliasedIds,
-  iAttributes,
-  modified,
-  UNRESOLVED_ATTRIBUTE,
-  updatedAt,
-} from '../schema/attribute-definition';
+import { buildChanges, generateCreateMessage, generateRestoreMessage } from './data-changes';
+import { authorizedMembers, authorizedMembersActivationDate, confidence, iAliasedIds, iAttributes, modified, updatedAt } from '../schema/attribute-definition';
 import { ENTITY_TYPE_INDICATOR } from '../modules/indicator/indicator-types';
 import { FilterMode, FilterOperator, Version } from '../generated/graphql';
 import { getMandatoryAttributesForSetting } from '../modules/entitySetting/entitySetting-attributeUtils';
@@ -2022,149 +2012,6 @@ const updateAttributeRaw = async (context, user, instance, inputs, opts = {}) =>
   };
 };
 
-const findByIdsWithInternalUsers = async (context, ids, baseFields = []) => {
-  const opts = { toMap: true, baseData: baseFields.length > 0, baseFields };
-  const entitiesMap = await internalFindByIds(context, SYSTEM_USER, ids, opts);
-  const results = {};
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i];
-    if (INTERNAL_USERS[id]) {
-      results[id] = INTERNAL_USERS[id];
-    }
-    if (entitiesMap[id]) {
-      results[id] = entitiesMap[id];
-    }
-  }
-  return results;
-};
-const translateFinders = (context) => {
-  return async (ids, baseFields) => {
-    const entitiesMap = await findByIdsWithInternalUsers(context, ids, baseFields);
-    const results = {};
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
-      if (INTERNAL_USERS[id]) {
-        results[id] = INTERNAL_USERS[id];
-      }
-      if (entitiesMap[id]) {
-        results[id] = entitiesMap[id];
-      }
-    }
-    return results;
-  };
-};
-
-// Convert an input attribute value to his "translated" value for human
-const buildAttribute = async (context, entityType, key, values) => {
-  const translater = translateFinders(context);
-  const attributeDef = schemaAttributesDefinition.getAttribute(entityType, key);
-  const refDef = schemaRelationsRefDefinition.getRelationRef(entityType, key);
-  const attribute = attributeDef || refDef;
-  const cleanedValues = values.filter((val) => val !== null && val !== undefined);
-  return Promise.all(cleanedValues.map(async (item) => {
-    // Complex object
-    if (attribute.type === 'ref') {
-      const translated = { [item.internal_id]: extractEntityRepresentativeName(item) };
-      return { raw: item.internal_id, translated: JSON.stringify(translated) };
-    }
-    if (attribute.type === 'object') {
-      const translated = await attribute.translate?.(item, translater);
-      return { raw: JSON.stringify(item), translated: translated ? JSON.stringify(translated) : undefined };
-    }
-    if (attribute.type === 'string' && attribute.format === 'json') {
-      const translated = await attribute.translate?.(item, translater);
-      return { raw: item, translated: translated ? JSON.stringify(translated) : undefined };
-    }
-    // Native type
-    if (attribute.type === 'string') {
-      // String representing an id
-      if (attribute.format === 'id') {
-        let translated;
-        if (attribute.translate) {
-          translated = await attribute.translate(item, translater);
-        } else {
-          const entitiesMap = await findByIdsWithInternalUsers(context, item);
-          const humanValue = entitiesMap[item] ? extractEntityRepresentativeName(entitiesMap[item]) : UNRESOLVED_ATTRIBUTE;
-          translated = { [item]: humanValue };
-        }
-        return { raw: item, translated: JSON.stringify(translated) };
-      }
-      // String representing a short text
-      if (attribute.format === 'short') {
-        return { raw: item };
-      }
-      // String representing a long text
-      if (attribute.format === 'text') {
-        return { raw: item };
-      }
-      // String representing as a enum
-      if (attribute.format === 'enum') {
-        return { raw: item };
-      }
-      // String representing a vocabulary
-      if (attribute.format === 'vocabulary') {
-        return { raw: item };
-      }
-    }
-    if (attribute.type === 'date') {
-      return { raw: item };
-    }
-    if (attribute.type === 'boolean') {
-      return { raw: item };
-    }
-    if (attribute.type === 'numeric') {
-      return { raw: item };
-    }
-    throw UnsupportedError('Change build error, unknown attribute type and key', { type: attribute.type, key });
-  }));
-};
-
-export const buildChanges = async (context, entityType, inputs) => {
-  const changes = [];
-  for (const input of inputs) {
-    const { key: field, previous: prevValues, value, operation } = input;
-    if (!field) {
-      continue;
-    }
-    const attributeDefinition = schemaAttributesDefinition.getAttribute(entityType, field);
-    const relationsRefDefinition = schemaRelationsRefDefinition.getRelationRef(entityType, field);
-    const attribute = attributeDefinition || relationsRefDefinition;
-    const isMultiple = attribute.multiple;
-
-    const previousArrayFull = Array.isArray(prevValues) ? prevValues : [prevValues];
-    const valueArrayFull = Array.isArray(value) ? value : [value];
-    const previous = await buildAttribute(context, entityType, field, previousArrayFull);
-    const valueArray = await buildAttribute(context, entityType, field, valueArrayFull);
-
-    if (isMultiple) {
-      let added = [];
-      let removed = [];
-      if (operation === UPDATE_OPERATION_ADD) {
-        added = valueArray.filter((valueItem) => !previous.find((previousItem) => previousItem.raw === valueItem.raw));
-      } else if (operation === UPDATE_OPERATION_REMOVE) {
-        removed = valueArray.filter((valueItem) => previous.find((previousItem) => previousItem.raw === valueItem.raw));
-      } else { // Replace
-        removed = previous.filter((previousItem) => !valueArray.find((valueItem) => previousItem.raw === valueItem.raw));
-        added = valueArray.filter((valueItem) => !previous.find((previousItem) => previousItem.raw === valueItem.raw));
-      }
-      if (added.length > 0 || removed.length > 0) {
-        changes.push({
-          field: entityType + '--' + field,
-          changes_added: added,
-          changes_removed: removed,
-        });
-      }
-    } else {
-      changes.push({
-        field: entityType + '--' + field,
-        changes_removed: previous,
-        changes_added: valueArray,
-      });
-    }
-  }
-  return changes;
-};
-
 const resolveRefsForInputs = async (context, user, type, updateInputs) => {
   // endregion
   const metaKeys = [...schemaRelationsRefDefinition.getStixNames(type), ...schemaRelationsRefDefinition.getInputNames(type)];
@@ -2522,7 +2369,7 @@ export const updateAttributeMetaResolved = async (context, user, initial, inputs
     }
     // Only push event in stream if modifications really happens
     if (updatedInputs.length > 0) {
-      const changes = await buildChanges(context, updatedInstance.entity_type, updatedInputs);
+      const changes = await buildChanges(context, user, updatedInstance.entity_type, updatedInputs);
       const isContainCommitReferences = opts.references && opts.references.length > 0;
       const commit = isContainCommitReferences ? {
         message: opts.commitMessage,
@@ -3081,7 +2928,7 @@ export const createRelationRaw = async (context, user, rawInput, opts = {}) => {
         // Generate the new version of the from
         instance[key] = [...(instance[key] ?? []), targetElement];
       }
-      const changes = await buildChanges(context, instance.entity_type, inputs);
+      const changes = await buildChanges(context, user, instance.entity_type, inputs);
       const isContainCommitReferences = opts.references && opts.references.length > 0;
       const commit = isContainCommitReferences ? {
         message: opts.commitMessage,
@@ -3154,21 +3001,8 @@ export const createInferredRelation = async (context, input, ruleContent, opts =
   logApp.info('Create inferred relation', inputRelation);
   return createRelationRaw(context, RULE_MANAGER_USER, inputRelation, args);
 };
-/* v8 ignore next */
-export const createRelations = async (context, user, inputs, opts = {}) => {
-  const createdRelations = [];
-  // Relations cannot be created in parallel. (Concurrent indexing on same key)
-  // Could be improved by grouping and indexing in one shot.
-  for (let i = 0; i < inputs.length; i += 1) {
-    const relation = await createRelation(context, user, inputs[i], opts);
-    createdRelations.push(relation);
-  }
-  return createdRelations;
-};
-// endregion
 
 // region mutation entity
-
 export const getExistingEntities = async (context, user, input, type) => {
   const participantIds = getInputIds(type, input);
   const existingByIdsPromise = internalFindByIds(context, SYSTEM_USER, participantIds, { type });
@@ -3541,7 +3375,7 @@ export const internalDeleteElementById = async (context, user, id, type, opts = 
         // Generate the new version of the from
         instance[key] = withoutElementDeleted;
       }
-      const changes = await buildChanges(context, instance.entity_type, inputs);
+      const changes = await buildChanges(context, user, instance.entity_type, inputs);
       const isContainCommitReferences = opts.references && opts.references.length > 0;
       const commit = isContainCommitReferences ? {
         message: opts.commitMessage,

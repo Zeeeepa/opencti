@@ -556,7 +556,7 @@ export const internalFindByIds = async <T extends BasicStoreObject>(
 export const internalFindByIdsMapped = async <T extends BasicStoreObject>(
   context: AuthContext,
   user: AuthUser,
-  ids: string[],
+  ids: string[] | string,
   args?: {
     type?: string | string[];
     baseData?: boolean;

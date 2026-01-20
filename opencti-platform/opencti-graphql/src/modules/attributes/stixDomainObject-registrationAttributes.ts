@@ -14,7 +14,6 @@ import {
   lang,
   modified,
   revoked,
-  UNRESOLVED_ATTRIBUTE,
   xOpenctiAliases,
   xOpenctiModifiedAt,
   xOpenctiReliability,
@@ -48,8 +47,8 @@ import { CVSS_SEVERITY_VALUES } from '../../domain/vulnerability';
 import { ENTITY_TYPE_PIR } from '../pir/pir-types';
 import { ENTITY_TYPE_STATUS } from '../../schema/internalObject';
 import { X_WORKFLOW_ID } from '../../schema/identifier';
-import { isEntityStatus, isEntityTemplate } from '../workflow/workflow-types';
 import { DefaultFormating } from '../../utils/humanize';
+import type { BasicWorkflowStatus } from '../../types/store';
 
 const workflowId: IdAttribute = {
   name: X_WORKFLOW_ID,
@@ -62,16 +61,10 @@ const workflowId: IdAttribute = {
   multiple: false,
   upsert: true,
   isFilterable: false,
-  translate: async (item, loaderIds) => {
-    const status = await loaderIds([item]);
-    if (status[item] && isEntityStatus(status[item])) {
-      const templateId = status[item].template_id;
-      const template = await loaderIds([templateId]);
-      if (template[templateId] && isEntityTemplate(template[templateId])) {
-        return { [item]: template[templateId].name };
-      }
-    }
-    return { [item]: UNRESOLVED_ATTRIBUTE };
+  attrRawIds: async (item, getEntitiesMapFromCache) => {
+    const platformStatuses = await getEntitiesMapFromCache<BasicWorkflowStatus>(ENTITY_TYPE_STATUS);
+    const templateId = platformStatuses.get(item)?.template_id;
+    return templateId ? [{ id: templateId, source: item }] : [];
   },
   representative: (item, translate, _ = DefaultFormating): string => {
     return translate[item];

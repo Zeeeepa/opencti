@@ -1,7 +1,7 @@
 import * as jsonpatch from 'fast-json-patch';
 import type { AuthUser } from '../../types/user';
 import type { StoreObject } from '../../types/store';
-import { generateMergeMessage } from '../generate-message';
+import { generateMergeMessage } from '../data-changes';
 import { convertStoreToStix_2_1 } from '../stix-2-1-converter';
 import type { StixCoreObject, StixObject } from '../../types/stix-2-1-common';
 import { asyncListTransformation, EVENT_TYPE_CREATE, EVENT_TYPE_DELETE, EVENT_TYPE_MERGE, EVENT_TYPE_UPDATE } from '../utils';

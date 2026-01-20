@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildChanges } from '../../../src/database/middleware';
 import { ENTITY_TYPE_CONTAINER_REPORT, ENTITY_TYPE_MALWARE } from '../../../src/schema/stixDomainObject';
-import { testContext } from '../../utils/testQuery';
+import { ADMIN_USER, testContext } from '../../utils/testQuery';
+import { buildChanges } from '../../../src/database/data-changes';
 
 describe('buildChanges standard behavior', async () => {
   it('should build changes for value replaced by other value in "description"', async () => {
@@ -12,7 +12,7 @@ describe('buildChanges standard behavior', async () => {
         value: ['new description'],
       },
     ];
-    const changes = await buildChanges(testContext, ENTITY_TYPE_MALWARE, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_MALWARE, inputs);
     expect(changes).toEqual([{
       field: 'Malware--description',
       changes_removed: [{ raw: 'description' }],
@@ -27,7 +27,7 @@ describe('buildChanges standard behavior', async () => {
         value: ['description'],
       },
     ];
-    const changes = await buildChanges(testContext, ENTITY_TYPE_MALWARE, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_MALWARE, inputs);
     expect(changes).toEqual([{
       field: 'Malware--description',
       changes_removed: [],
@@ -42,7 +42,7 @@ describe('buildChanges standard behavior', async () => {
         value: [],
       },
     ];
-    const changes = await buildChanges(testContext, ENTITY_TYPE_MALWARE, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_MALWARE, inputs);
     expect(changes).toEqual([{
       field: 'Malware--description',
       changes_removed: [{ raw: 'description' }],
@@ -51,7 +51,7 @@ describe('buildChanges standard behavior', async () => {
   });
   it('should build changes for "Malware types" added', async () => {
     const inputs = [{ key: 'malware_types', previous: ['backdoor'], value: ['backdoor', 'bootkit'] }];
-    const changes = await buildChanges(testContext, ENTITY_TYPE_MALWARE, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_MALWARE, inputs);
     expect(changes).toEqual([{
       field: 'Malware--malware_types',
       changes_removed: [],
@@ -66,7 +66,7 @@ describe('buildChanges standard behavior', async () => {
         value: ['backdoor'],
       },
     ];
-    const changes = await buildChanges(testContext, ENTITY_TYPE_MALWARE, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_MALWARE, inputs);
     expect(changes).toEqual([{
       field: 'Malware--malware_types',
       changes_removed: [{ raw: 'bootkit' }],
@@ -85,7 +85,7 @@ describe('buildChanges standard behavior', async () => {
       }],
     }];
 
-    const changes = await buildChanges(testContext, ENTITY_TYPE_CONTAINER_REPORT, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_CONTAINER_REPORT, inputs);
     expect(changes).toEqual([{
       field: 'Report--objectParticipant',
       changes_removed: [],
@@ -108,7 +108,7 @@ describe('buildChanges standard behavior', async () => {
       }],
     }];
 
-    const changes = await buildChanges(testContext, ENTITY_TYPE_CONTAINER_REPORT, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_CONTAINER_REPORT, inputs);
     expect(changes).toEqual([{
       field: 'Report--objectParticipant',
       changes_removed: [],
@@ -156,7 +156,7 @@ describe('buildChanges standard behavior', async () => {
       },
     ];
 
-    const changes = await buildChanges(testContext, ENTITY_TYPE_CONTAINER_REPORT, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_CONTAINER_REPORT, inputs);
     expect(changes).toEqual([{
       field: 'Report--objectMarking',
       changes_removed: [],
@@ -257,7 +257,7 @@ describe('buildChanges standard behavior', async () => {
       },
     ];
 
-    const changes = await buildChanges(testContext, ENTITY_TYPE_CONTAINER_REPORT, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_CONTAINER_REPORT, inputs);
     expect(changes).toEqual([{
       field: 'Report--objectMarking',
       changes_removed: [],
@@ -396,7 +396,7 @@ describe('buildChanges standard behavior', async () => {
       },
     ];
 
-    const changes = await buildChanges(testContext, ENTITY_TYPE_CONTAINER_REPORT, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_CONTAINER_REPORT, inputs);
     expect(changes).toEqual([{
       field: 'Report--objectMarking',
       changes_removed: [{ raw: '6da54f1c-8c1b-4c61-953a-2ded39adcaba', translated: '{"6da54f1c-8c1b-4c61-953a-2ded39adcaba":"TLP:GREEN"}' }],
@@ -405,7 +405,7 @@ describe('buildChanges standard behavior', async () => {
   });
   it('should build changes for integer (like confidence level)', async () => {
     const inputs = [{ key: 'confidence', previous: [58], value: [52] }];
-    const changes = await buildChanges(testContext, ENTITY_TYPE_CONTAINER_REPORT, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_CONTAINER_REPORT, inputs);
     expect(changes).toEqual([{
       field: 'Report--confidence',
       changes_removed: [{ raw: 58 }],
@@ -540,7 +540,7 @@ describe('buildChanges standard behavior', async () => {
       ],
     },
     ];
-    const changes = await buildChanges(testContext, ENTITY_TYPE_CONTAINER_REPORT, inputs);
+    const changes = await buildChanges(testContext, ADMIN_USER, ENTITY_TYPE_CONTAINER_REPORT, inputs);
     expect(changes).toEqual([{
       field: 'Report--objectLabel',
       changes_removed: [

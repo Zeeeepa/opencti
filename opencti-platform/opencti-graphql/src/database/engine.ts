@@ -194,6 +194,7 @@ import type {
 import type { BasicStoreSettings } from '../types/settings';
 import { completeSpecialFilterKeys } from '../utils/filtering/filtering-completeSpecialFilterKeys';
 import { IDS_ATTRIBUTES } from '../domain/attribute-utils';
+import { schemaRelationsRefDefinition } from '../schema/schema-relationsRef';
 
 const ELK_ENGINE = 'elk';
 const OPENSEARCH_ENGINE = 'opensearch';
@@ -623,10 +624,14 @@ const buildHistoryRestrictions = (user: AuthUser, historyFiltering?: boolean) =>
     // Compute forbidden fields for the user
     const forbiddenAttributes = [];
     const registeredTypes = schemaAttributesDefinition.getRegisteredTypes();
+    const refTypes = schemaRelationsRefDefinition.getRegisteredTypes();
     for (let i = 0; i < registeredTypes.length; i += 1) {
       const registeredType = registeredTypes[i];
-      const attributes = schemaAttributesDefinition.getAttributes(registeredType);
-      const invalidAttrs = Array.from(attributes.values()).filter((a: AttributeDefinition) =>
+      const attrs = schemaAttributesDefinition.getAttributes(registeredType);
+      const refs = refTypes.includes(registeredType) ? schemaRelationsRefDefinition.getRelationsRef(registeredType) : [];
+      const attributes = Array.from(attrs.values());
+      attributes.push(...refs);
+      const invalidAttrs = attributes.filter((a: AttributeDefinition) =>
         !isUserHasCapabilities(user, a.requiredCapabilities));
       forbiddenAttributes.push(...invalidAttrs.map((a) => registeredType + '--' + a.name));
     }
@@ -1957,7 +1962,16 @@ export const elBatchIds = async <T extends BasicStoreBase>(
   const ids = elements.map((e) => e.id);
   const types = elements.map((e) => e.type);
   const hits = await elFindByIds<T>(context, user, ids, { type: types, includeDeletedInDraft: true }) as T[];
-  return ids.map((id) => R.find((h) => h.internal_id === id, hits));
+  const findHits = [];
+  for (let index = 0; index < ids.length; index++) {
+    const id = ids[index];
+    if (INTERNAL_USERS[id]) {
+      findHits.push(INTERNAL_USERS[id]);
+    } else {
+      findHits.push(R.find((h) => h.internal_id === id, hits));
+    }
+  }
+  return findHits;
 };
 export const elBatchIdsWithRelCount = async <T extends BasicStoreBase>(
   context: AuthContext,
@@ -1983,7 +1997,8 @@ const BASE_SEARCH_HISTORY = [
   // Pounds for history search
   'context_data.history_changes.field^4',
   // Add all other attributes
-  'context_data.history_changes.*',
+  'context_data.history_changes.changes_added.raw',
+  'context_data.history_changes.changes_removed.raw',
 ];
 const BASE_SEARCH_ATTRIBUTES = [
   // Pounds for attributes search

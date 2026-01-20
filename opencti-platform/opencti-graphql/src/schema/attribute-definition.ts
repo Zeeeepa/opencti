@@ -1,12 +1,10 @@
 import { ENTITY_TYPE_GROUP, ENTITY_TYPE_USER } from './internalObject';
 import { ABSTRACT_BASIC_OBJECT, ABSTRACT_BASIC_RELATIONSHIP } from './general';
 import { getDraftOperations } from '../modules/draftWorkspace/draftOperations';
-import type { BasicStoreCommon } from '../types/store';
+import type { BasicStoreIdentifier } from '../types/store';
 import type { AuthorizedMembers } from '../utils/authorizedMembers';
-import validator from 'validator';
 import { DefaultFormating, type Formating } from '../utils/humanize';
-
-export const UNRESOLVED_ATTRIBUTE = '{{unresolved}}';
+import type { StixId, StixObject } from '../types/stix-2-1-common';
 
 export const shortMapping = {
   type: 'text',
@@ -46,8 +44,8 @@ type BasicDefinition = {
   requiredCapabilities?: string[];
 };
 
-type TranslatorFn<T extends BasicStoreAttribute> = (item: T, loaderIds: (ids: string[], fields?: string[])
-=> Promise<Record<string, BasicStoreCommon>>) => Promise<Record<string, string>>;
+type GetRawIdsFn<T extends BasicStoreAttribute> = (item: T, getEntitiesMapFromCache:
+<Z extends BasicStoreIdentifier | StixObject>(type: string) => Promise<Map<string | StixId, Z>>) => Promise<{ id: string; source?: string }[]>;
 
 type RepresentativeFn<T extends BasicStoreAttribute> = (item: T, dict: Record<string, string>, opts: Formating) => string;
 
@@ -66,16 +64,16 @@ export type BasicObjectDefinition<T extends BasicStoreAttribute = BasicStoreAttr
 export type DateAttribute = { type: 'date' } & BasicDefinition;
 export type BooleanAttribute = { type: 'boolean' } & BasicDefinition;
 export type NumericAttribute = { type: 'numeric'; precision: 'integer' | 'long' | 'float'; scalable?: boolean } & BasicDefinition;
-export type IdAttribute = { type: 'string'; format: 'id'; entityTypes: string[]; translate?: TranslatorFn<string>; representative?: RepresentativeFn<string> } & BasicDefinition;
+export type IdAttribute = { type: 'string'; format: 'id'; entityTypes: string[]; attrRawIds?: GetRawIdsFn<string>; representative?: RepresentativeFn<string> } & BasicDefinition;
 export type TextAttribute = { type: 'string'; format: 'short' | 'text' } & BasicDefinition;
 export type EnumAttribute = { type: 'string'; format: 'enum'; values: string[] } & BasicDefinition;
 export type VocabAttribute = { type: 'string'; format: 'vocabulary'; vocabularyCategory: string } & BasicDefinition;
-export type JsonAttribute = { type: 'string'; format: 'json'; translate?: TranslatorFn<string>; representative?: RepresentativeFn<string>; multiple: false; schemaDef?: Record<string, any> } & BasicDefinition;
-export type ObjectDefinition<T extends BasicStoreAttribute> = { type: 'object'; translate?: TranslatorFn<T>; representative?: RepresentativeFn<T> } & BasicDefinition;
+export type JsonAttribute = { type: 'string'; format: 'json'; attrRawIds?: GetRawIdsFn<string>; representative?: RepresentativeFn<string>; multiple: false; schemaDef?: Record<string, any> } & BasicDefinition;
+export type ObjectDefinition<T extends BasicStoreAttribute> = { type: 'object'; attrRawIds?: GetRawIdsFn<T>; representative?: RepresentativeFn<T> } & BasicDefinition;
 export type FlatObjectAttribute<T extends BasicStoreAttribute> = { type: 'object'; format: 'flat' } & ObjectDefinition<T>;
 export type ObjectAttribute<T extends BasicStoreAttribute = BasicStoreAttribute> = { type: 'object'; format: 'standard' } & BasicObjectDefinition<T>;
 export type NestedObjectAttribute<T extends BasicStoreAttribute> = { type: 'object'; format: 'nested' } & BasicObjectDefinition<T>;
-export type RefAttribute = { type: 'ref'; databaseName: string; stixName: string; isRefExistingForTypes: Checker; datable?: boolean; toTypes: string[] } & BasicDefinition;
+export type RefAttribute = { type: 'ref'; attrRawIds?: GetRawIdsFn<string>; databaseName: string; stixName: string; isRefExistingForTypes: Checker; datable?: boolean; toTypes: string[] } & BasicDefinition;
 export type StringAttribute = IdAttribute | TextAttribute | EnumAttribute | VocabAttribute | JsonAttribute;
 export type ComplexAttribute<T extends BasicStoreAttribute = BasicStoreAttribute> = FlatObjectAttribute<T> | ObjectAttribute<T> | NestedObjectAttribute<T>;
 export type ComplexAttributeWithMappings<T extends BasicStoreAttribute = BasicStoreAttribute> = ObjectAttribute<T> | NestedObjectAttribute<T>;
@@ -308,21 +306,11 @@ export const authorizedMembers: NestedObjectAttribute<AuthorizedMembers> = {
   upsert: false,
   isFilterable: false,
   requiredCapabilities: ['KNOWLEDGE_KNUPDATE_KNMANAGEAUTHMEMBERS'],
-  translate: async (item, loaderIds) => {
+  attrRawIds: async (item, _) => {
     const { groups_restriction_ids = [], id } = item;
     const groups = groups_restriction_ids ?? [];
     const ids = [id, ...groups];
-    const entitiesMap = await loaderIds(ids, ['internal_id', 'name']);
-    const translate: Record<string, string> = {};
-    const idResolver = (id: string) => {
-      if (!validator.isUUID(id)) return id; // Case ALL
-      return entitiesMap[id] ? (entitiesMap[id] as any).name : UNRESOLVED_ATTRIBUTE;
-    };
-    for (let index = 0; index < ids.length; index++) {
-      const identifier = ids[index];
-      translate[identifier] = idResolver(identifier);
-    }
-    return translate;
+    return ids.map((id) => ({ id }));
   },
   representative: (item, translate, _ = DefaultFormating): string => {
     const groupIds = item.groups_restriction_ids ?? [];
