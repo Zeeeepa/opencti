@@ -89,7 +89,17 @@ const Tag = ({
   }
 
   return (
-    <Tooltip title={tooltipTitle ?? label} placement="bottom-start">
+    <Tooltip
+      title={tooltipTitle ?? label}
+      placement="bottom-start"
+      slotProps={{
+        tooltip: {
+          sx: {
+            textTransform: applyLabelTextTransform ? 'inherit' : 'none',
+          },
+        },
+      }}
+    >
       {chip}
     </Tooltip>
   );
