@@ -309,7 +309,7 @@ export const elConfigureAttachmentProcessor = async (): Promise<boolean> => {
         },
       ],
     }).catch((e) => {
-      logApp.error('Engine attachment processor configuration fail', { cause: e });
+      logApp.info('Engine attachment processor configuration fail', { cause: e });
       success = false;
     });
   } else {
@@ -339,18 +339,18 @@ export const elConfigureAttachmentProcessor = async (): Promise<boolean> => {
 };
 
 // Look for the engine version with OpenSearch client
-export const searchEngineVersion = async (): Promise<{ platform: string; version: string }> => {
-  const engineToUse = engine as OpenClient;
-  const searchInfo = await engineToUse.info()
-    .then((info) => oebp(info).version)
-    .catch(
-      /* v8 ignore next */ (e) => {
-        throw ConfigurationError('Search engine seems down', { cause: e });
-      },
-    );
-  const searchPlatform = searchInfo.distribution || ELK_ENGINE; // openSearch or elasticSearch
-  const searchVersion = searchInfo.number;
-  return { platform: searchPlatform, version: searchVersion };
+export const searchEngineVersion = async (engine: OpenClient) => {
+  try {
+    const { body: { version: { distribution, number }, tagline } } = await engine.info();
+    // Try to detect OpenSearch engine, based on https://github.com/opensearch-project/OpenSearch/blame/main/server/src/main/java/org/opensearch/action/main/MainResponse.java
+    const platform = (distribution === OPENSEARCH_ENGINE || tagline?.includes('OpenSearch')) ? OPENSEARCH_ENGINE : ELK_ENGINE;
+    return {
+      platform: platform,
+      version: number,
+    } as const;
+  } catch (e) {
+    throw ConfigurationError('Search engine seems down', { cause: e });
+  }
 };
 
 export const searchEngineInit = async (): Promise<boolean> => {
@@ -403,7 +403,7 @@ export const searchEngineInit = async (): Promise<boolean> => {
   if (engineSelector === ELK_ENGINE) {
     logApp.info(`[SEARCH] Engine ${ELK_ENGINE} client selected by configuration`);
     engine = elasticSearchClient;
-    const searchVersion = await searchEngineVersion();
+    const searchVersion = await searchEngineVersion(openSearchClient);
     if (engineCheck && searchVersion.platform !== ELK_ENGINE) {
       throw ConfigurationError('Invalid Search engine selector', { configured: engineSelector, detected: searchVersion.platform });
     }
@@ -412,7 +412,7 @@ export const searchEngineInit = async (): Promise<boolean> => {
   } else if (engineSelector === OPENSEARCH_ENGINE) {
     logApp.info(`[SEARCH] Engine ${OPENSEARCH_ENGINE} client selected by configuration`);
     engine = openSearchClient;
-    const searchVersion = await searchEngineVersion();
+    const searchVersion = await searchEngineVersion(openSearchClient);
     if (engineCheck && searchVersion.platform !== OPENSEARCH_ENGINE) {
       throw ConfigurationError('Invalid Search engine selector', { configured: engineSelector, detected: searchVersion.platform });
     }
@@ -421,7 +421,7 @@ export const searchEngineInit = async (): Promise<boolean> => {
   } else {
     logApp.info(`[SEARCH] Engine client not specified, trying to discover it with ${OPENSEARCH_ENGINE} client`);
     engine = openSearchClient;
-    const searchVersion = await searchEngineVersion();
+    const searchVersion = await searchEngineVersion(openSearchClient);
     enginePlatform = searchVersion.platform;
     logApp.info(`[SEARCH] Engine detected to ${enginePlatform}`);
     engineVersion = searchVersion.version;
